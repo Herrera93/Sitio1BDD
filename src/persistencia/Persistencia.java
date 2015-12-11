@@ -20,6 +20,7 @@ public interface Persistencia extends Remote {
      * Inserta secuencialmente todos los datos de un DataTable en su tabla
      * correspondiente segun el nombre de la tabla
      * 
+     * @param tabla
      * @param tablas los nombres de las tablas a las que se desean insertar
      * datos, éstas tablas deben estar en el orden de inserción necesario para
      * que todas las tablas se puedan insertar sin que haya problemas de
@@ -74,7 +75,7 @@ public interface Persistencia extends Remote {
      * @throws RemoteException en caso de que ocurra un error remoto al invocar
      * este método
      */
-    public boolean delete(String tabla, Map<String, ?> attrWhere)
+    public boolean delete(String tabla, Map<String, Object> attrWhere)
             throws RemoteException;
     
     /**
@@ -91,6 +92,7 @@ public interface Persistencia extends Remote {
      * valor el valor que esa columna debe tomar para que se obtenga ese
      * registro de la tabla. En caso de que este parámetro sea null se regresarán
      * todos los registros de la tabla
+     * @param orderColumn obligatoria
      * 
      * @return un objeto DataTable con los registros que resultaron de la consulta,
      * un DataTable vacío en caso de que la consulta no haya retornado nada o
@@ -100,7 +102,7 @@ public interface Persistencia extends Remote {
      * este método
      */
     public DataTable get(String tabla, String[] columnas, String[] aliases,
-            Map<String, ?> attrWhere)
+            Map<String, Object> attrWhere, String orderColumn)
             throws RemoteException;
     
     public DataTable getImplementacionesByEmpleado(String numeroEmpleado)

@@ -511,6 +511,31 @@ public class DataTable extends AbstractTableModel {
         return frags[1];
     }
 
+    public DataTable obtenerColumnas(String[] columnasObtener) {
+        //Columnas actuales
+        List<String> columnasActuales = new ArrayList<>(Arrays.asList(columns));
+
+        for (int i = 0; i < columnasActuales.size(); i++) {
+            String columnaActual = columnasActuales.get(i);
+
+            for (String columnaRemover : columnasObtener) {
+                if (columnaActual.equalsIgnoreCase(columnaRemover)) {
+                    columnasActuales.remove(i);
+                    i--;
+                    break;
+                }
+            }
+        }
+
+        String[] columnasNuevas = new String[columnasActuales.size()];
+
+        columnasNuevas = columnasActuales.toArray(columnasNuevas);
+
+        DataTable[] frags = fragmentarVertical(columnasObtener, columnasNuevas);
+
+        return frags[0];
+    }
+    
     @Override
     public String toString() {
         String string = "";

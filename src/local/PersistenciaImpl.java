@@ -7,7 +7,6 @@ package local;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.HashMap;
 import java.util.Map;
 import modelo.dao.BaseDAO;
 import modelo.dto.DataTable;
@@ -64,8 +63,8 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
 
         } else if (tabla.equalsIgnoreCase(("plantel"))) {
             datos.rewind();
-            //ok = TransactionManager.insertPlantel(false, tabla, datos);
-            System.out.println("Inserción de plantel, resultado: "
+           ok = TransactionManager.updatePlantel(datos, attrWhere);
+            System.out.println("Modificación de plantel, resultado: "
                     + ok);
 
         } else if (tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
@@ -82,15 +81,16 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
     }
 
     @Override
-    public boolean delete(String tabla, Map<String, ?> attrWhere) throws RemoteException {
+    public boolean delete(String tabla, Map<String, Object> attrWhere)
+            throws RemoteException {
         boolean ok = false;
         
         if (tabla.equalsIgnoreCase("empleado")) {
             ok = TransactionManager.deleteEmpleado(attrWhere);
         } else if (tabla.equalsIgnoreCase(("plantel"))) {
-            //ok = TransactionManager.insertPlantel(false, tabla, datos);
+            ok = TransactionManager.deletePlantel(attrWhere);
         } else if (tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
-            //ok = false;
+            ok = false;
         } else {
             ok = TransactionManager.deleteReplicado(tabla, attrWhere);
     }
@@ -100,7 +100,7 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
 
     @Override
     public DataTable get(String tabla, String[] columnas, String[] aliases,
-            Map<String, ?> attrWhere) throws RemoteException {
+            Map<String, Object> attrWhere, String orderColumn) throws RemoteException {
 
         DataTable dt = null;
 
@@ -108,49 +108,48 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
                 && !tabla.equalsIgnoreCase("plantel")
                 && !tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
             //Todas son consultas locales....
-            dt = new BaseDAO().get(tabla, columnas, aliases, attrWhere);
-        } else if (tabla.equalsIgnoreCase("empleado")) {
+            dt = new BaseDAO().get(tabla, columnas, aliases, attrWhere, orderColumn);
+        }  else if(tabla.equalsIgnoreCase("empleado")) {
 
-            if (attrWhere == null || (!attrWhere.containsKey("direccion_id")
+            if(attrWhere == null) {
+                //Consulta general
+                dt = TransactionManager.consultarEmpleados();
+            } else if((attrWhere.containsKey("adscripcion_id")
+                    && (int)attrWhere.get("adscripcion_id") == 2)
+                    || (!attrWhere.containsKey("direccion_id")
                     && !attrWhere.containsKey("departamento_id")
-                    && !attrWhere.containsKey("numero"))) {
-                //Consulta general o filtrada
+                    && !attrWhere.containsKey("numero")
+                    && !attrWhere.containsKey("adscripcion_id"))) {
+                System.out.println("consulta filtrada en todos los sitios!");
+                //Consulta filtrada de todos los sitios
                 dt = TransactionManager.consultarEmpleados(attrWhere);
 
-            } else if (attrWhere.containsKey("direccion_id")
-                    || attrWhere.containsKey("departamento_id")) {
-                //Consultas filtradas en el sitio 2
-                //dt = TransactionManager.getEmpleadosByD(columnas, attrWhere);
-            } else if (attrWhere.containsKey("numero")) {
+            } else if(attrWhere.containsKey("direccion_id") ||
+                    attrWhere.containsKey("departamento_id") ||
+                    (attrWhere.containsKey("adscripcion_id")
+                    && (int)attrWhere.get("adscripcion_id") != 2)) {
+                //Consultas filtradas en el sitio 1 y 2
+                dt = TransactionManager.consultarEmpleadosByD(attrWhere);
+                
+            } else if(attrWhere.containsKey("numero")) { 
                 //Consulta especifica
                 dt = TransactionManager.getEmpleado(columnas, attrWhere);
             }
-        } else if (tabla.equalsIgnoreCase("plantel")) {
-            if (attrWhere == null || !attrWhere.containsKey("id")) {
+        } else if(tabla.equalsIgnoreCase("plantel")) {
+            if(attrWhere == null || !attrWhere.containsKey("id")) {
                 //Consulta filtrada o general
                 dt = TransactionManager.consultarPlanteles(attrWhere);
             } else {
                 //Consulta especifica
                 dt = TransactionManager.getPlantel(attrWhere);
             }
-        } else if (tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
-            dt = TransactionManager.consultarImplementaciones(attrWhere);
         }
 
         return dt;
     }
 
-    /**
-     * Consulta para obtener las implementaciones donde haya participado un empleado.
-     * @param numeroEmpleado
-     * @return
-     * @throws RemoteException 
-     */
     @Override
     public DataTable getImplementacionesByEmpleado(String numeroEmpleado) throws RemoteException {
-        HashMap<String, Object> condicion = new HashMap();
-        condicion.put("empleado_numero", numeroEmpleado);
-        String[] columna = {"implementacion_evento_id"};
-        return get("implementacion_evento_empleado", columna, null, condicion);
+        return TransactionManager.consultarImplementacionesByEmpleado(numeroEmpleado);
     }
 }

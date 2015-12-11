@@ -92,6 +92,7 @@ public interface Sitio extends Remote {
      * @param attrWhere hashmap que contiene las condiciones where, con la llave
      * como columna y el valor como el valor que tomará la columna en el query.
      * Si ese hashmap es null, entonces se devolverán todos los registros
+     * @param orderColumn obligatoria
      * 
      * @return el objeto DataTable con los registros que se obtuvieron, un DataTable
      * vacío en caso de que no se hayan encontrado registros o null en caso de que
@@ -100,7 +101,7 @@ public interface Sitio extends Remote {
      * @throws RemoteException en caso de que ocurra un error remoto.
      */
     public DataTable get(String tabla, String[] columnas, String[] aliases,
-            Map<String, ?> attrWhere) throws RemoteException;
+            Map<String, ?> attrWhere, String orderColumn) throws RemoteException;
     
     /**
      * Este método sirve para indicar al nodo que se debe realizar un commit
