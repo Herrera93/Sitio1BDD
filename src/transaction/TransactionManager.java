@@ -471,36 +471,41 @@ public class TransactionManager {
             "departamento_id", "plantel_id", "direccion_id"};
         List<String> listaLlaves = Arrays.asList(fragLlaves);
         List<String> listaColumnas = null;
+        boolean segundoFragmento = false;
         if(columnas != null){
             listaColumnas = Arrays.asList(columnas);
+            segundoFragmento = listaLlaves.retainAll(listaColumnas);
+            fragLlaves = (String[]) listaLlaves.toArray();
+        }else{
+            fragLlaves = null;
         }
         
         //Se busca en el nodo local al Empleado[NOMBRES]
         DataTable empleado = QueryManager.uniGet(Interfaces.LOCALHOST,
                 EMPLEADO, columnas, null, condicion);
-        if(columnas == null || listaLlaves.retainAll(listaColumnas)){
+        if(columnas == null || segundoFragmento){
             DataTable llaves = QueryManager.uniGet(Interfaces.SITIO_2, EMPLEADO,
-                columnas, null, condicion);
+                fragLlaves, null, condicion);
            empleado = DataTable.combinarFragV(empleado, llaves, "numero");
         }
         
-        if (empleado == null && empleado.getRowCount() == 0) {
+        if (empleado == null || empleado.getRowCount() == 0) {
             //En caso de no encontrarse se busca en el nodo 4
             empleado = QueryManager.uniGet(Interfaces.SITIO_4, EMPLEADO, null,
                     null, condicion);
-            if(columnas == null || listaLlaves.retainAll(listaColumnas)){
+            if(columnas == null || segundoFragmento){
                 DataTable llaves = QueryManager.uniGet(Interfaces.SITIO_3, EMPLEADO,
-                    columnas, null, condicion);
+                    fragLlaves, null, condicion);
                empleado = DataTable.combinarFragV(empleado, llaves, "numero");
             }
             
-            if (empleado == null && empleado.getRowCount() == 0) {
+            if (empleado == null || empleado.getRowCount() == 0) {
                 //Por ultimo se busca en el sitio 7 en caso de no encontrarse
                 empleado = QueryManager.uniGet(Interfaces.SITIO_7, EMPLEADO, null,
                         null, condicion);
                 if(columnas == null || listaLlaves.retainAll(listaColumnas)){
                     DataTable llaves = QueryManager.uniGet(Interfaces.SITIO_6, EMPLEADO,
-                        columnas, null, condicion);
+                        fragLlaves, null, condicion);
                    empleado = DataTable.combinarFragV(empleado, llaves, "numero");
                 }
             }
