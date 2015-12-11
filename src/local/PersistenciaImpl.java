@@ -7,8 +7,7 @@ package local;
 
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
 import java.util.Map;
 import modelo.dao.BaseDAO;
 import modelo.dto.DataTable;
@@ -37,7 +36,7 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
 
         } else if (tabla.equalsIgnoreCase(("plantel"))) {
             datos.rewind();
-            ok = TransactionManager.insertPlantel(false, tabla, datos);
+            ok = TransactionManager.insertPlantel(datos);
             System.out.println("Inserción de plantel: " + tabla + ", resultado: "
                     + ok);
 
@@ -59,7 +58,7 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
 
         if (tabla.equalsIgnoreCase("empleado")) {
             datos.rewind();
-            //ok = TransactionManager.insertEmpleado(datos);
+            ok = TransactionManager.updateEmpleado(datos, attrWhere);
             System.out.println("Modificación de empleado, resultado: "
                     + ok);
 
@@ -87,7 +86,7 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
         boolean ok = false;
         
         if (tabla.equalsIgnoreCase("empleado")) {
-            //ok = TransactionManager.insertEmpleado(true, tabla, datos);
+            ok = TransactionManager.deleteEmpleado(attrWhere);
         } else if (tabla.equalsIgnoreCase(("plantel"))) {
             //ok = TransactionManager.insertPlantel(false, tabla, datos);
         } else if (tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
@@ -110,18 +109,48 @@ public class PersistenciaImpl extends UnicastRemoteObject implements Persistenci
                 && !tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
             //Todas son consultas locales....
             dt = new BaseDAO().get(tabla, columnas, aliases, attrWhere);
-        }  else if(tabla.equalsIgnoreCase("empleado")){
-            if(attrWhere == null){
-                dt = TransactionManager.consultarEmpleados();
-            }else if(attrWhere.containsKey("numero")){                
+        } else if (tabla.equalsIgnoreCase("empleado")) {
+
+            if (attrWhere == null || (!attrWhere.containsKey("direccion_id")
+                    && !attrWhere.containsKey("departamento_id")
+                    && !attrWhere.containsKey("numero"))) {
+                //Consulta general o filtrada
+                dt = TransactionManager.consultarEmpleados(attrWhere);
+
+            } else if (attrWhere.containsKey("direccion_id")
+                    || attrWhere.containsKey("departamento_id")) {
+                //Consultas filtradas en el sitio 2
+                //dt = TransactionManager.getEmpleadosByD(columnas, attrWhere);
+            } else if (attrWhere.containsKey("numero")) {
+                //Consulta especifica
                 dt = TransactionManager.getEmpleado(columnas, attrWhere);
             }
-        }else if(tabla.equalsIgnoreCase("plantel")){
-            if(attrWhere == null) {
-                dt = TransactionManager.consultarPlanteles();
+        } else if (tabla.equalsIgnoreCase("plantel")) {
+            if (attrWhere == null || !attrWhere.containsKey("id")) {
+                //Consulta filtrada o general
+                dt = TransactionManager.consultarPlanteles(attrWhere);
+            } else {
+                //Consulta especifica
+                dt = TransactionManager.getPlantel(attrWhere);
             }
+        } else if (tabla.equalsIgnoreCase("implementacion_evento_empleado")) {
+            dt = TransactionManager.consultarImplementaciones(attrWhere);
         }
 
         return dt;
+    }
+
+    /**
+     * Consulta para obtener las implementaciones donde haya participado un empleado.
+     * @param numeroEmpleado
+     * @return
+     * @throws RemoteException 
+     */
+    @Override
+    public DataTable getImplementacionesByEmpleado(String numeroEmpleado) throws RemoteException {
+        HashMap<String, Object> condicion = new HashMap();
+        condicion.put("empleado_numero", numeroEmpleado);
+        String[] columna = {"implementacion_evento_id"};
+        return get("implementacion_evento_empleado", columna, null, condicion);
     }
 }
